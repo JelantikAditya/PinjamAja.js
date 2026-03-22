@@ -8,6 +8,8 @@ const app = express();   // <- ini yang membuat app
 app.use(cors());
 app.use(express.json());
 
+app.use("/api/auth", authRoutes);
+
 // test server
 app.get("/", (req, res) => {
   res.send("PinjamAja API Running 🚀");

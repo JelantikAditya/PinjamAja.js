@@ -3,9 +3,10 @@ const bcrypt = require("bcrypt");
 
 exports.registerUser = async (req, res) => {
   try {
+    console.log("BODY:", req.body);
+
     const { name, email, password, phone } = req.body;
 
-    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await pool.query(
@@ -18,7 +19,7 @@ exports.registerUser = async (req, res) => {
       user: newUser.rows[0],
     });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send("Server error");
+    console.error("ERROR:", err); // ⬅️ ini penting
+    res.status(500).json({ error: err.message }); // ⬅️ biar kelihatan di Postman
   }
 };
