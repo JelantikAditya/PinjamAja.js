@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const bcrypt = require("bcrypt");
+const jwt = require('jsonwebtoken');
 
 exports.registerUser = async (req, res) => {
   try {
@@ -21,5 +22,59 @@ exports.registerUser = async (req, res) => {
   } catch (err) {
     console.error("ERROR:", err); // ⬅️ ini penting
     res.status(500).json({ error: err.message }); // ⬅️ biar kelihatan di Postman
+  }
+};
+
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // 1. Cari user berdasarkan email
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+
+    // ❗ Kenapa dicek?
+    // Karena kalau user tidak ada → langsung stop
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+
+    const user = userResult.rows[0];
+
+    // 2. Bandingkan password
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    // ❗ Kenapa pakai bcrypt.compare?
+    // Karena password di DB itu HASH, bukan plain text
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Password salah' });
+    }
+
+    // 3. Generate token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    // ❗ Kenapa payload hanya id & email?
+    // Jangan simpan data sensitif di token!
+
+    // 4. Kirim ke user
+    res.json({
+      message: 'Login berhasil',
+      token
+    });
+
+  
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
